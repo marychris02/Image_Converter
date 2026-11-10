@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1e3a">
+<script>
+/* removes the multi-thread helper that was tried earlier */
+(function(){try{if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});sessionStorage.removeItem('coi')}catch(e){}})();
+</script>
+<title>AnyFormat – Image Converter and Editor</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="#top" aria-label="AnyFormat home">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="#a7b6d0" stroke-width="2"><rect x="3" y="3" width="15" height="15" rx="5"/><rect x="12" y="12" width="15" height="15" rx="5"/></svg>
+      ImageConventer
+    </a>
+    <div class="pill"><span class="dot"></span>Private. Runs on your device</div>
+  </div>
+</header>
+
+<main id="top" class="wrap">
+  <div class="hero">
+    <h1>Convert and edit your images</h1>
+    <p class="lead">Change the format, crop, remove the background, sharpen to HD, or extend a photo. Free, no sign-up.</p>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="What do you want to do?">
+    <button type="button" role="tab" aria-selected="true" data-t="convert" class="on">Convert</button>
+    <button type="button" role="tab" aria-selected="false" data-t="crop">Crop</button>
+    <button type="button" role="tab" aria-selected="false" data-t="bg">Remove background</button>
+    <button type="button" role="tab" aria-selected="false" data-t="hd">Enhance HD</button>
+    <button type="button" role="tab" aria-selected="false" data-t="ext">Extend</button>
+  </div>
+
+  <section class="card" id="panel-convert">
+    <input type="file" id="file" accept="image/*" multiple hidden>
+    <div class="step"><span class="num">1</span><div><h2>Choose your image</h2><p>JPG, PNG, or WebP. You can pick several at once.</p></div></div>
+    <div class="drop" id="drop" role="button" tabindex="0" aria-label="Choose an image">
+      <div class="up"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg></div>
+      <div class="t"><strong id="dt">Choose an image</strong><span id="ds">Tap to browse, or drop a file here</span></div>
+    </div>
+
+    <div class="opts">
+      <div class="box" id="formats">
+        <div class="step"><span class="num">2</span><div><h2>Convert to</h2><p>Pick the new format</p></div></div>
+        <div class="fmts" role="radiogroup" aria-label="Output format">
+          <input type="radio" name="fmt" id="f1" value="image/jpeg"><label for="f1"><i>J</i><span>JPG<small>Photos</small></span></label>
+          <input type="radio" name="fmt" id="f2" value="image/png"><label for="f2"><i>P</i><span>PNG<small>Transparent</small></span></label>
+          <input type="radio" name="fmt" id="f3" value="image/webp" checked><label for="f3"><i>W</i><span>WebP<small>Web</small></span></label>
+        </div>
+      </div>
+      <div class="box" id="qbox">
+        <div class="step"><span class="num">3</span><div><h2>Quality</h2><p>Higher quality means a bigger file</p></div></div>
+        <div class="qhead"><span>Smaller</span><b id="qv">85%</b><span>Sharper</span></div>
+        <input type="range" id="q" min="40" max="100" value="85" aria-label="Image quality">
+      </div>
+    </div>
+
+    <div class="foot">
+      <button class="btn big" id="go" type="button"><span><span id="gt">Choose an image</span><small id="gs">JPG, PNG, or WebP</small></span></button>
+      <p class="priv"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Your image never leaves this browser.</p>
+    </div>
+
+    <ul id="list" aria-live="polite"></ul>
+    <div class="allrow" id="allrow" hidden><button id="all" class="sec" type="button">Download all</button></div>
+  </section>
+
+  <section class="card" id="panel-tools" hidden>
+    <p class="hint" id="hint"></p>
+    <input type="file" id="tfile" accept="image/*" hidden>
+    <div class="stage">
+      <button type="button" id="empty">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+        Choose an image
+        <span>Tap to browse your device</span>
+      </button>
+      <div class="cropbox" id="cropbox" hidden>
+        <img id="cimg" alt="Image to crop">
+        <div class="crop" id="crop"><i data-h="t"></i><i data-h="b"></i><i data-h="l"></i><i data-h="r"></i><i data-h="tl"></i><i data-h="tr"></i><i data-h="bl"></i><i data-h="br"></i></div>
+      </div>
+      <div class="ba" id="ba" hidden>
+        <img id="bb" alt="Before">
+        <img class="aft" id="aa" alt="After" hidden>
+        <span class="lb" style="left:10px">Before</span>
+        <span class="lb" id="alb" style="right:10px" hidden>After</span>
+        <div class="hnd" id="hnd" hidden></div>
+      </div>
+    </div>
+
+    <div class="tbar">
+      <div class="tctl" id="c-crop">
+        <label>Shape <select id="ratio"><option value="0">Free</option><option value="1">Square 1:1</option><option value="1.3333">4:3</option><option value="1.7778">Wide 16:9</option><option value="0.5625">Tall 9:16</option></select></label>
+        <button type="button" class="sec" id="rot">Rotate 90°</button>
+        <button type="button" class="btn go" id="docrop">Apply crop</button>
+      </div>
+      <div class="tctl" id="c-bg" hidden><button type="button" class="btn go" id="dobg">Remove background</button></div>
+      <div class="tctl" id="c-hd" hidden>
+        <label>Output size <select id="scale"><option value="1280">HD (1280 px)</option><option value="1920" selected>Full HD (1920 px)</option><option value="2560">2K (2560 px)</option><option value="3840">4K (3840 px)</option></select></label>
+        <button type="button" class="btn go" id="dohd">Enhance with AI</button>
+        <button type="button" class="sec" id="dostop" hidden>Cancel</button>
+      </div>
+      <div class="tctl" id="c-ext" hidden>
+        <label>Left (px)<input type="number" inputmode="numeric" id="el" min="0" max="2000" value="0"></label>
+        <label>Top (px)<input type="number" inputmode="numeric" id="et" min="0" max="2000" value="0"></label>
+        <label>Right (px)<input type="number" inputmode="numeric" id="er" min="0" max="2000" value="200"></label>
+        <label>Bottom (px)<input type="number" inputmode="numeric" id="eb" min="0" max="2000" value="0"></label>
+        <button type="button" class="btn go" id="doext">Extend</button>
+      </div>
+      <button type="button" class="sec" id="tpick" hidden>Change image</button>
+    </div>
+
+    <div class="rbar" id="rbar" hidden>
+      <button type="button" class="btn" id="rdl">Download PNG</button>
+      <button type="button" class="sec" id="rsend">Send to converter</button>
+      <button type="button" class="sec" id="rkeep">Keep editing</button>
+    </div>
+    <p class="mt" id="tmsg" aria-live="polite"></p>
+  </section>
+
+  <section class="how" id="how">
+    <h3>How it works</h3>
+    <div class="steps">
+      <div class="s"><b>1. Pick a tool</b><span>Convert, crop, remove background, enhance, or extend.</span></div>
+      <div class="s"><b>2. Choose an image</b><span>Tap the box and select a photo from your device.</span></div>
+      <div class="s"><b>3. Download</b><span>Save the result or send it to the converter.</span></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap fb">
+    <span>AnyFormat</span>
+    <span>Simple image tools, right in your browser.</span>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script src="tools.js"></script>
+</body>
+</html>
