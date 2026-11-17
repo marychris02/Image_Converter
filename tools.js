@@ -8,7 +8,8 @@
   function mk(w,h){var c=document.createElement('canvas');c.width=w;c.height=h;return c}
   function blobOf(c,type,q){return new Promise(function(res){c.toBlob(res,type||'image/png',q)})}
   function url(b){var u=URL.createObjectURL(b);urls.push(u);return u}
-  function say(t,err){msg.textContent=t;msg.className='mt'+(err?' err':'')}
+  var sayHook=null;
+  function say(t,err){if(sayHook&&!err){sayHook(t);return}msg.textContent=t;msg.className='mt'+(err?' err':'')}
   function toCanvas(blob){return createImageBitmap(blob).then(function(bm){var c=mk(bm.width,bm.height);c.getContext('2d').drawImage(bm,0,0);return c})}
   function need(){if(!work){throw new Error('Choose an image first.')}}
 
@@ -54,13 +55,17 @@
   /* ---------- load image ---------- */
   $('tpick').addEventListener('click',function(){$('tfile').click()});
   $('empty').addEventListener('click',function(){$('tfile').click()});
-  $('tfile').addEventListener('change',function(){
-    var f=this.files[0];this.value='';if(!f)return;
+  function loadFile(f){
     var u=URL.createObjectURL(f),i=new Image();
     i.onload=function(){work=mk(i.naturalWidth,i.naturalHeight);work.getContext('2d').drawImage(i,0,0);URL.revokeObjectURL(u);name=f.name.replace(/\.[^.]+$/,'');say(f.name+' · '+work.width+'×'+work.height);show()};
     i.onerror=function(){say('This browser can’t open this file type.',1)};
     i.src=u;
+  }
+  $('tfile').addEventListener('change',function(){
+    var f=this.files[0];this.value='';if(!f)return;loadFile(f);
   });
+  // lets the converter list open one of its photos in an edit tool (for example Enhance HD)
+  window.anyformatEdit=function(f,t){work=null;setTab(t);loadFile(f);window.scrollTo(0,0)};
 
   /* ---------- before/after slider ---------- */
   function move(p){p=clamp(p,0,1);aa.style.clipPath='inset(0 0 0 '+p*100+'%)';hnd.style.left=p*100+'%'}
@@ -349,17 +354,33 @@
           .then(toCanvas).then(function(c){note='Done. Now '+c.width+'×'+c.height+'. Drag the handle to compare.';return done(c)});
       }
       cancelled=false;st.hidden=false;
-      var need4=Math.min(Math.ceil(T/4),640),k=Math.min(1,need4/L),src=mk(Math.round(work.width*k),Math.round(work.height*k)),sx=src.getContext('2d');
-      sx.fillStyle='#fff';sx.fillRect(0,0,src.width,src.height);sx.imageSmoothingQuality='high';sx.drawImage(work,0,0,src.width,src.height);
       var fin=function(r){st.hidden=true;return r},bad=function(e){st.hidden=true;throw e};
-      return aiUpscale(src).then(function(big){
-        var s=T/Math.max(big.width,big.height),W=Math.round(big.width*s),H=Math.round(big.height*s),out=resizeTo(big,W,H);
-        unsharp(out,.5,Math.max(.8,T/1600));
-        note='Done. AI enhanced to '+W+'×'+H+'. Drag the handle to compare.';
-        return done(out);
+      return enhanceCanvas(work,T).then(function(r){
+        note=(r.ai?'Done. AI enhanced to ':'The AI model could not load, so the built-in HD sharpen was used. Now ')+r.canvas.width+'×'+r.canvas.height+'. Drag the handle to compare.';
+        return done(r.canvas);
       }).then(fin,bad);
     });
   });
+  // makes one canvas larger and clearer: AI when it can load, built-in enlarge + sharpen when it cannot
+  function enhanceCanvas(w,T){
+    var L=Math.max(w.width,w.height),need4=Math.min(Math.ceil(T/4),640),k=Math.min(1,need4/L),src=mk(Math.round(w.width*k),Math.round(w.height*k)),sx=src.getContext('2d');
+    sx.fillStyle='#fff';sx.fillRect(0,0,src.width,src.height);sx.imageSmoothingQuality='high';sx.drawImage(w,0,0,src.width,src.height);
+    return aiUpscale(src).then(function(big){
+      var s=T/Math.max(big.width,big.height),W=Math.round(big.width*s),H=Math.round(big.height*s),out=resizeTo(big,W,H);
+      unsharp(out,.5,Math.max(.8,T/1600));
+      return{canvas:out,ai:true};
+    },function(e){
+      if(cancelled||(e&&e.message==='Cancelled.'))throw e;
+      var s=T/Math.max(w.width,w.height),W=Math.round(w.width*s),H=Math.round(w.height*s),out=resizeTo(w,W,H);
+      unsharp(out,.9,Math.max(.8,T/1400));
+      return{canvas:out,ai:false};
+    });
+  }
+  // used by the Convert tab: enhance a canvas and report progress through hook(text)
+  window.anyformatEnhance=function(c,T,hook){
+    cancelled=false;sayHook=hook||null;
+    return enhanceCanvas(c,T).then(function(r){sayHook=null;return r.canvas},function(e){sayHook=null;throw e});
+  };
 
   /* ---------- extend in any direction ---------- */
   ['el','et','er','eb'].forEach(function(id){ // no stray zeros: "010" becomes "10", and tapping a box selects its number
