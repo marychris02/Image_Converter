@@ -1,7 +1,7 @@
 (function(){
   var $=function(i){return document.getElementById(i)};
   var EXTEND_API=''; // optional: URL of your AI outpainting server (see notes). Empty = local fill.
-  var note='',tab='crop',work=null,result=null,name='image',urls=[],r={x:0,y:0,w:0,h:0},drag=null;
+  var note='',tab='home',work=null,result=null,name='image',urls=[],r={x:0,y:0,w:0,h:0},drag=null;
   var cimg=$('cimg'),cropEl=$('crop'),cropbox=$('cropbox'),ba=$('ba'),bb=$('bb'),aa=$('aa'),hnd=$('hnd'),alb=$('alb'),msg=$('tmsg'),rbar=$('rbar'),empty=$('empty');
 
   function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
@@ -16,6 +16,7 @@
   function show(){
     urls.forEach(function(u){URL.revokeObjectURL(u)});urls=[];result=null;
     rbar.hidden=true;aa.hidden=true;hnd.hidden=true;alb.hidden=true;$('tpick').hidden=!work;
+    $('bgchoose').hidden=true;$('dobg').hidden=false; // the background choices come back only after the background is removed
     if(!work){empty.hidden=false;cropbox.hidden=true;ba.hidden=true;return}
     empty.hidden=true;
     blobOf(work).then(function(b){
@@ -25,17 +26,30 @@
     });
   }
 
-  /* ---------- tabs ---------- */
-  var HINT={crop:'Drag the box to choose what to keep. Pull a corner to resize it.',bg:'Removes the background and saves a transparent PNG. The first run downloads an AI model, so it may take a minute.',hd:'Uses AI to rebuild fine detail, so the photo looks sharper and not just bigger. The first run downloads an AI model and can take a minute or two. Choose a size, then press the button.',ext:'Adds empty space around your photo. Enter how many pixels to add on each side.'};
+  /* ---------- pages: home + tools (the address bar follows the page, so Back works) ---------- */
+  var TOOLS=['convert','crop','bg','hd','ext'];
+  var HINT={crop:'Drag the box to choose what to keep. Pull a corner to resize it.',bg:'Press Remove background first. When the subject is cut out, choose what goes behind it: transparent, a color, or a picture from your device. The first run downloads an AI model, so it may take a minute.',hd:'Uses AI to rebuild fine detail, so the photo looks sharper and not just bigger. The first run downloads an AI model and can take a minute or two. Choose a size, then press the button.',ext:'Adds empty space around your photo. Enter how many pixels to add on each side.'};
+  function hashOf(t){return t==='home'?'home':'t-'+t}
+  function fromHash(){
+    var h=location.hash.slice(1);
+    if(!h||h==='home')return 'home';
+    var t=h.replace(/^t-/,'');
+    return TOOLS.indexOf(t)>-1?t:'home';
+  }
   function setTab(t){
-    tab=t;var conv=t==='convert';
+    tab=t;var home=t==='home',conv=t==='convert';
+    $('homepage').hidden=!home;
     document.querySelectorAll('.tabs button').forEach(function(x){var on=x.dataset.t===t;x.classList.toggle('on',on);x.setAttribute('aria-selected',on)});
-    $('panel-convert').hidden=!conv;$('panel-tools').hidden=conv;
-    if(conv)return;
+    $('panel-convert').hidden=!conv;$('panel-tools').hidden=home||conv;
+    try{if(location.hash!=='#'+hashOf(t))history.replaceState(null,'','#'+hashOf(t))}catch(e){}
+    document.title=home?'AnyFormat – Image Converter and Editor':'AnyFormat – '+(conv?'Convert':t==='crop'?'Crop':t==='bg'?'Remove background':t==='hd'?'Enhance HD':'Extend');
+    if(home||conv)return;
     ['crop','bg','hd','ext'].forEach(function(k){$('c-'+k).hidden=k!==t});
     $('hint').textContent=HINT[t];say('');show();
   }
-  document.querySelectorAll('.tabs button').forEach(function(b){b.addEventListener('click',function(){setTab(b.dataset.t)})});
+  document.querySelectorAll('.tabs button').forEach(function(b){b.addEventListener('click',function(){location.hash=hashOf(b.dataset.t)})});
+  window.addEventListener('hashchange',function(){setTab(fromHash());window.scrollTo(0,0)});
+  $('explore').addEventListener('click',function(){$('toolgrid').scrollIntoView({behavior:'smooth',block:'start'})});
 
   /* ---------- load image ---------- */
   $('tpick').addEventListener('click',function(){$('tfile').click()});
@@ -146,31 +160,39 @@
     });
     return bgModel;
   }
-  /* Simple remover with no download: erases the background colour connected to the photo's edges.
-     Works well on plain or softly shaded backgrounds. Used only when the AI model cannot load. */
+  /* Basic remover with no download. Used only when the AI model cannot load.
+     It starts from the photo's edges and spreads inward while the colour changes only a little from one
+     pixel to the next, so soft shaded backgrounds work. The subject's edge is then smoothed. */
   function simpleBG(c){
-    var w=c.width,h=c.height,out=mk(w,h),x=out.getContext('2d');x.drawImage(c,0,0);
-    var im=x.getImageData(0,0,w,h),d=im.data,N=w*h,seen=new Uint8Array(N),stack=new Int32Array(N),sp=0;
-    var br=0,bg=0,bb=0,n=0;
-    function edge(i){var p=i*4;br+=d[p];bg+=d[p+1];bb+=d[p+2];n++}
-    for(var i=0;i<w;i++){edge(i);edge((h-1)*w+i)}
-    for(var j=1;j<h-1;j++){edge(j*w);edge(j*w+w-1)}
-    br/=n;bg/=n;bb/=n;
-    var TOL=48*48*3/3; // squared colour distance allowed from the background colour
-    function like(i){var p=i*4,a=d[p]-br,b=d[p+1]-bg,c2=d[p+2]-bb;return a*a+b*b+c2*c2<=TOL}
-    function push(i){if(!seen[i]&&like(i)){seen[i]=1;stack[sp++]=i}}
-    for(var i2=0;i2<w;i2++){push(i2);push((h-1)*w+i2)}
-    for(var j2=1;j2<h-1;j2++){push(j2*w);push(j2*w+w-1)}
+    var W=c.width,H=c.height,k=Math.min(1,640/Math.max(W,H)),w=Math.max(2,Math.round(W*k)),h=Math.max(2,Math.round(H*k));
+    var s=mk(w,h),sx=s.getContext('2d');sx.imageSmoothingQuality='high';sx.drawImage(c,0,0,w,h);
+    var d=sx.getImageData(0,0,w,h).data,N=w*h;
+    var R=[],G=[],B=[];
+    function samp(i){var p=i*4;R.push(d[p]);G.push(d[p+1]);B.push(d[p+2])}
+    for(var i=0;i<w;i++){samp(i);samp((h-1)*w+i)}
+    for(var j=1;j<h-1;j++){samp(j*w);samp(j*w+w-1)}
+    function med(a){a.sort(function(x,y){return x-y});return a[a.length>>1]}
+    var br=med(R),bg=med(G),bb=med(B); // the typical background colour is the middle value of the edge pixels
+    var STEP=14*14,MAXD=85*85; // largest jump between neighbours, and largest distance from the typical background colour
+    function far(i){var p=i*4,x=d[p]-br,y=d[p+1]-bg,z=d[p+2]-bb;return x*x+y*y+z*z}
+    function dist2(a,b){var p=a*4,q=b*4,x=d[p]-d[q],y=d[p+1]-d[q+1],z=d[p+2]-d[q+2];return x*x+y*y+z*z}
+    var seen=new Uint8Array(N),stack=new Int32Array(N),sp=0;
+    function seed(i){if(!seen[i]&&far(i)<=MAXD){seen[i]=1;stack[sp++]=i}} // edge pixels that are part of the subject are not used
+    function grow(a,b){if(!seen[b]&&dist2(a,b)<=STEP&&far(b)<=MAXD){seen[b]=1;stack[sp++]=b}}
+    for(var i2=0;i2<w;i2++){seed(i2);seed((h-1)*w+i2)}
+    for(var j2=1;j2<h-1;j2++){seed(j2*w);seed(j2*w+w-1)}
     while(sp){
-      var k=stack[--sp],kx=k%w;
-      if(kx>0)push(k-1);if(kx<w-1)push(k+1);if(k>=w)push(k-w);if(k<N-w)push(k+w);
+      var p=stack[--sp],px=p%w;
+      if(px>0)grow(p,p-1);if(px<w-1)grow(p,p+1);if(p>=w)grow(p,p-w);if(p<N-w)grow(p,p+w);
     }
-    for(var q=0;q<N;q++){
-      if(seen[q]){d[q*4+3]=0;continue}
-      var qx=q%w; // soften the edge: pixels touching the removed area become half transparent
-      if((qx>0&&seen[q-1])||(qx<w-1&&seen[q+1])||(q>=w&&seen[q-w])||(q<N-w&&seen[q+w]))d[q*4+3]=130;
-    }
-    x.putImageData(im,0,0);return out;
+    var m=mk(w,h),mx=m.getContext('2d'),im=mx.createImageData(w,h);
+    for(var q=0;q<N;q++){im.data[q*4+3]=seen[q]?0:255} // the subject stays, the background is cleared
+    mx.putImageData(im,0,0);
+    var out=mk(W,H),x=out.getContext('2d');x.drawImage(c,0,0);
+    x.globalCompositeOperation='destination-in';x.imageSmoothingQuality='high';
+    x.filter='blur('+Math.max(1,.8/k).toFixed(1)+'px)'; // soft edge
+    x.drawImage(m,0,0,W,H);x.filter='none';x.globalCompositeOperation='source-over';
+    return out;
   }
   function removeBG(c){
     return loadBG().then(function(o){
@@ -192,18 +214,59 @@
       });
     });
   }
+  /* ---------- new background: transparent, a color, or a picture from your device ---------- */
+  var cutout=null,cutFor=null,cutNote='',bgImg=null;
+  function bgMode(){return document.querySelector('input[name=bgmode]:checked').value}
+  function compose(cut){ // put the cut-out subject on top of the chosen background
+    var mode=bgMode();
+    if(mode==='none')return cut;
+    var W=cut.width,H=cut.height,c=mk(W,H),x=c.getContext('2d');
+    if(mode==='color'){x.fillStyle=$('bgcolor').value;x.fillRect(0,0,W,H)}
+    else{
+      if(!bgImg)throw new Error('Choose a background picture first.');
+      var k=Math.max(W/bgImg.width,H/bgImg.height),dw=bgImg.width*k,dh=bgImg.height*k; // fill the frame, crop the extra
+      x.imageSmoothingQuality='high';x.drawImage(bgImg,(W-dw)/2,(H-dh)/2,dw,dh);
+    }
+    x.drawImage(cut,0,0);return c;
+  }
+  function getCutout(){ // the AI runs once per photo; changing the background later reuses the same cut-out
+    if(cutout&&cutFor===work)return Promise.resolve(cutout);
+    var src=work;
+    return removeBG(src).then(function(c){cutNote='';return c},function(err){
+      console.warn('Using the simple remover because the AI one failed:',err);
+      say('AI model unavailable. Using the simple remover…');
+      return Promise.resolve().then(function(){
+        var why=String((err&&err.message)||'').replace(/^The AI background remover could not load/,'').replace(/[()]/g,'').replace(/\.$/,'').trim();
+        cutNote='The AI model could not load'+(why?' ('+why+')':'')+', so the basic remover was used. It only works well on plain backgrounds.';
+        return simpleBG(src);
+      });
+    }).then(function(c){cutout=c;cutFor=src;return c});
+  }
+  function putBG(){
+    var c=compose(cutout);
+    note=cutNote||'Done. You can change the background below, or drag the handle to compare.';
+    return done(c);
+  }
+  function reapply(){if(tab==='bg'&&cutout&&cutFor===work)run($('dobg'),'Applying background',putBG)}
   $('dobg').addEventListener('click',function(){
     run(this,'Removing background',function(){
-      return removeBG(work).then(function(c){return done(c)},function(err){
-        console.warn('Using the simple remover because the AI one failed:',err);
-        say('AI model unavailable. Using the simple remover…');
-        return Promise.resolve().then(function(){return done(simpleBG(work))}).then(function(){
-          note='Done with the simple remover (the AI model could not load on this browser). It works best on plain backgrounds. Drag the handle to compare.';
-        });
+      return getCutout().then(function(){
+        $('bm1').checked=true;$('bgcolorrow').hidden=true;$('bgpicrow').hidden=true; // first show the plain cut-out
+        var p=putBG();
+        $('dobg').hidden=true;$('bgchoose').hidden=false; // now the background choices appear
+        return p;
       });
     });
   });
-
+  document.querySelectorAll('input[name=bgmode]').forEach(function(r){r.addEventListener('change',function(){
+    var m=bgMode();$('bgcolorrow').hidden=m!=='color';$('bgpicrow').hidden=m!=='pic';reapply();
+  })});
+  $('bgcolor').addEventListener('change',reapply);
+  $('bgpick').addEventListener('click',function(){$('bgfile').click()});
+  $('bgfile').addEventListener('change',function(){
+    var f=this.files[0];this.value='';if(!f)return;
+    createImageBitmap(f).then(function(bm){bgImg=bm;$('bgpicname').textContent=f.name;reapply()},function(){say('This browser can’t open this file type.',1)});
+  });
   /* ---------- enhance to HD ---------- */
   var ENHANCE_API=''; // optional: URL of your AI upscaler (Real-ESRGAN etc.). Empty = built-in HD upscale.
   function sharpen(c,a){ // fallback for browsers without canvas blur
@@ -352,4 +415,7 @@
     });
   });
   $('rkeep').addEventListener('click',function(){if(result){work=result;show();say('Result is now your working image.')}});
+
+  /* ---------- start on the page named in the address bar (home by default) ---------- */
+  setTab(fromHash());
 })();
