@@ -34,7 +34,7 @@
     queue.innerHTML='';
     items.forEach(function(it){
       var li=document.createElement('li');
-      li.innerHTML='<img alt=""><div class="qn"><div class="nm"></div><div class="mt"></div></div><select class="fsel" aria-label="Convert this photo to"></select><button type="button" class="sec enh" aria-label="Make this photo clearer"></button><button type="button" class="rm" aria-label="Remove this photo">×</button>';
+      li.innerHTML='<img alt=""><div class="qn"><div class="nm"></div><div class="mt"></div></div><select class="fsel" aria-label="Convert this photo to"></select><button type="button" class="rm" aria-label="Remove this photo">×</button>';
       var img=li.querySelector('img');
       img.onerror=function(){img.style.visibility='hidden'};
       img.src=it.thumb;
@@ -44,10 +44,6 @@
       ORDER.forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=FMT[t].name;sel.appendChild(o)});
       sel.value=it.type;
       sel.addEventListener('change',function(){it.type=sel.value;sync()});
-      var eb=li.querySelector('.enh');
-      function paintEnh(){eb.textContent=it.enh?'✨ Clearer: On':'✨ Clearer: Off';eb.classList.toggle('on',!!it.enh);eb.setAttribute('aria-pressed',!!it.enh)}
-      paintEnh();
-      eb.addEventListener('click',function(){it.enh=!it.enh;paintEnh()});
       li.querySelector('.rm').addEventListener('click',function(){
         URL.revokeObjectURL(it.thumb);
         items=items.filter(function(x){return x!==it});
@@ -59,7 +55,7 @@
   function add(fl){
     for(var i=0;i<fl.length;i++){
       if(/^image\//.test(fl[i].type)||/\.(heic|heif|avif|bmp|gif|jpe?g|png|webp)$/i.test(fl[i].name))
-        items.push({id:++seq,file:fl[i],type:fmt(),enh:$('enhall').checked,thumb:URL.createObjectURL(fl[i])});
+        items.push({id:++seq,file:fl[i],type:fmt(),thumb:URL.createObjectURL(fl[i])});
     }
     renderQueue();sync();
   }
@@ -70,7 +66,6 @@
   ['dragenter','dragover'].forEach(function(e){drop.addEventListener(e,function(ev){ev.preventDefault();drop.classList.add('over')})});
   ['dragleave','drop'].forEach(function(e){drop.addEventListener(e,function(ev){ev.preventDefault();drop.classList.remove('over')})});
   drop.addEventListener('drop',function(ev){add(ev.dataTransfer.files)});
-  $('enhall').addEventListener('change',function(){items.forEach(function(i){i.enh=$('enhall').checked});renderQueue();sync()});
   q.addEventListener('input',function(){qv.textContent=q.value+'%';sync()});
   // choosing a format tile sets every photo in the list; each photo can still be changed on its own row
   document.querySelectorAll('input[name=fmt]').forEach(function(r){r.addEventListener('change',function(){
@@ -115,24 +110,18 @@
       return new Blob([buf],{type:'image/x-icon'});
     });
   }
-  function convert(file,type,quality,enh,prog){
+  function convert(file,type,quality){
     return load(file).then(function(o){
-      var c0=document.createElement('canvas'); c0.width=o.img.naturalWidth; c0.height=o.img.naturalHeight;
-      c0.getContext('2d').drawImage(o.img,0,0); URL.revokeObjectURL(o.url);
-      var L=Math.max(c0.width,c0.height); // already-large photos are left alone
-      var step=(enh&&window.anyformatEnhance&&L<2400)?window.anyformatEnhance(c0,Math.min(3840,Math.max(1280,L*4)),prog):Promise.resolve(c0);
-      return step.then(function(src){
-        var c=document.createElement('canvas'); c.width=src.width; c.height=src.height;
-        var ctx=c.getContext('2d');
-        if(type==='image/jpeg'){ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height)}
-        ctx.drawImage(src,0,0);
-        if(type==='image/bmp')return bmpBlob(c);
-        if(type==='image/x-icon')return icoBlob(c);
-        return toBlob(c,type,LOSSY[type]?quality:undefined).then(function(b){
-          if(!b) throw new Error('Conversion failed.');
-          if(b.type!==type) throw new Error('This browser can’t save '+FMT[type].name+'. Try JPG or PNG.');
-          return b;
-        });
+      var c=document.createElement('canvas'); c.width=o.img.naturalWidth; c.height=o.img.naturalHeight;
+      var ctx=c.getContext('2d');
+      if(type==='image/jpeg'){ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height)}
+      ctx.drawImage(o.img,0,0); URL.revokeObjectURL(o.url);
+      if(type==='image/bmp')return bmpBlob(c);
+      if(type==='image/x-icon')return icoBlob(c);
+      return toBlob(c,type,LOSSY[type]?quality:undefined).then(function(b){
+        if(!b) throw new Error('Conversion failed.');
+        if(b.type!==type) throw new Error('This browser can’t save '+FMT[type].name+'. Try JPG or PNG.');
+        return b;
       });
     });
   }
@@ -161,7 +150,7 @@
     items=[]; renderQueue(); busy=true; go.disabled=true; gt.textContent='Converting…'; gs.textContent='Please wait'; clearResults();
     var chain=Promise.resolve();
     batch.forEach(function(it){
-      chain=chain.then(function(){return convert(it.file,it.type,quality,it.enh,function(t){gs.textContent=t}).then(function(b){return{file:it.file,type:it.type,blob:b}},function(e){return{file:it.file,type:it.type,err:e.message}})})
+      chain=chain.then(function(){return convert(it.file,it.type,quality).then(function(b){return{file:it.file,type:it.type,blob:b}},function(e){return{file:it.file,type:it.type,err:e.message}})})
         .then(function(r){results.push(r);list.appendChild(row(r))});
     });
     chain.then(function(){
