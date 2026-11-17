@@ -197,8 +197,9 @@ footer{border-top:1px solid var(--line)}
 /* photo list in the converter: every photo has its own format */
 .addmore{width:100%;min-height:48px;margin:0 0 1rem;border-style:dashed}
 #queue{margin:0 0 .8rem}
-#queue li{grid-template-columns:52px 1fr 44px;grid-template-areas:"th nm rm" "th fm fm"}
-#queue img{grid-area:th}
+#queue li{grid-template-columns:84px 1fr auto 44px;grid-template-areas:"th nm nm rm" "th fm en en"}
+#queue .enh{grid-area:en;white-space:nowrap}
+#queue img{grid-area:th;width:84px;height:84px}
 #queue .qn{grid-area:nm;min-width:0}
 #queue .fsel{grid-area:fm}
 #queue .rm{grid-area:rm}
@@ -206,7 +207,7 @@ footer{border-top:1px solid var(--line)}
 .rm{display:grid;place-items:center;width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:transparent;color:#fff;font-size:1.3rem;line-height:1}
 .rm:hover{background:var(--chip)}
 @media (min-width:640px){
-  #queue li{grid-template-columns:52px 1fr 150px 44px;grid-template-areas:"th nm fm rm"}
+  #queue li{grid-template-columns:84px 1fr 150px auto 44px;grid-template-areas:"th nm fm en rm"}
 }
 
 /* remove background: choose what goes behind the subject */
@@ -220,3 +221,15 @@ footer{border-top:1px solid var(--line)}
 
 .bgchoose{display:grid;gap:.8rem;width:100%}
 .bgchoose p{margin:0}
+
+/* make clearer + big before/after in the converter */
+.enh.on{background:#fff;color:var(--bg)}
+.chk{display:flex;align-items:center;gap:.7rem;min-height:44px;font-weight:600;font-size:.95rem;cursor:pointer}
+.chk input{width:22px;height:22px;accent-color:#fff}
+#list li.res{grid-template-columns:1fr auto;gap:.6rem .8rem}
+#list li.res .pair{grid-column:1/-1;display:grid;grid-template-columns:1fr;gap:.8rem}
+#list li.res figure{margin:0}
+#list li.res .pair img{display:block;width:100%;height:auto;border-radius:12px;background:repeating-conic-gradient(#d4d4d4 0 25%,#fff 0 50%) 0 0/16px 16px}
+#list li.res figcaption{margin-top:.35rem;font-size:.8rem;font-weight:700;color:var(--mute)}
+@media (min-width:560px){#list li.res .pair{grid-template-columns:1fr 1fr}}
+#list li.res .dl{grid-column:auto}
