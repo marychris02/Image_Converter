@@ -15,43 +15,113 @@
 <body>
 <header>
   <div class="wrap bar">
-    <a class="brand" href="#top" aria-label="AnyFormat home">
+    <a class="brand" href="#home" aria-label="AnyFormat home">
       <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="#a7b6d0" stroke-width="2"><rect x="3" y="3" width="15" height="15" rx="5"/><rect x="12" y="12" width="15" height="15" rx="5"/></svg>
-      ImageConventer
+      AnyFormat
     </a>
     <div class="pill"><span class="dot"></span>Private. Runs on your device</div>
   </div>
 </header>
 
 <main id="top" class="wrap">
-  <div class="hero">
-    <h1>Convert and edit your images</h1>
-    <p class="lead">Change the format, crop, remove the background, sharpen to HD, or extend a photo. Free, no sign-up.</p>
-  </div>
 
-  <div class="tabs" role="tablist" aria-label="What do you want to do?">
-    <button type="button" role="tab" aria-selected="true" data-t="convert" class="on">Convert</button>
+  <!-- ===================== TABS (Home is the first tab) ===================== -->
+  <div class="tabs" id="tabs" role="tablist" aria-label="What do you want to do?">
+    <button type="button" role="tab" aria-selected="true" data-t="home" class="on">Home</button>
+    <button type="button" role="tab" aria-selected="false" data-t="convert">Convert</button>
     <button type="button" role="tab" aria-selected="false" data-t="crop">Crop</button>
     <button type="button" role="tab" aria-selected="false" data-t="bg">Remove background</button>
     <button type="button" role="tab" aria-selected="false" data-t="hd">Enhance HD</button>
     <button type="button" role="tab" aria-selected="false" data-t="ext">Extend</button>
   </div>
 
-  <section class="card" id="panel-convert">
+  <!-- ===================== HOMEPAGE ===================== -->
+  <div id="homepage">
+    <section class="hh">
+      <div class="hh-text">
+        <h1>Change any image into the format you need</h1>
+        <p class="lead">Convert, crop, cut out backgrounds, sharpen, or extend your photos. It all happens in your browser, so your pictures stay on your device.</p>
+        <div class="hh-cta">
+          <a class="btn" href="#t-convert">Choose an image</a>
+          <button type="button" class="sec" id="explore">See all tools</button>
+        </div>
+      </div>
+      <div class="swap" aria-hidden="true">
+        <div class="sw-row"><span class="sw-from">JPG</span><span class="sw-line"></span><span class="sw-to">WebP</span></div>
+        <div class="sw-row"><span class="sw-from">PNG</span><span class="sw-line"></span><span class="sw-to">JPG</span></div>
+        <div class="sw-row"><span class="sw-from">WebP</span><span class="sw-line"></span><span class="sw-to">PNG</span></div>
+      </div>
+    </section>
+
+    <section class="how" id="how">
+      <h2>How to use</h2>
+      <div class="steps">
+        <div class="s"><b>1. Pick a tool</b><span>Convert, crop, remove background, enhance, or extend.</span></div>
+        <div class="s"><b>2. Choose an image</b><span>Tap the box and select a photo from your device.</span></div>
+        <div class="s"><b>3. Download</b><span>Save the result or send it to the converter.</span></div>
+      </div>
+    </section>
+
+    <section class="tg" id="toolgrid">
+      <h2>Pick a tool</h2>
+      <div class="grid">
+        <a class="tool main" href="#t-convert">
+          <span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></span>
+          <b>Convert</b>
+          <span>Switch between JPG, PNG, WebP, BMP, and ICO. Add many photos and pick a different format for each one.</span>
+        </a>
+        <a class="tool" href="#t-crop">
+          <span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 002 2h14M2 6h14a2 2 0 012 2v14"/></svg></span>
+          <b>Crop</b>
+          <span>Trim a photo to the shape you want, or rotate it.</span>
+        </a>
+        <a class="tool" href="#t-bg">
+          <span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></span>
+          <b>Remove background</b>
+          <span>Cut out the subject, then keep it transparent or put it on a new color or picture.</span>
+        </a>
+        <a class="tool" href="#t-hd">
+          <span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
+          <b>Enhance HD</b>
+          <span>Make a small photo larger and sharper with AI.</span>
+        </a>
+        <a class="tool" href="#t-ext">
+          <span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4"/></svg></span>
+          <b>Extend</b>
+          <span>Add space around a photo on any side.</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="why">
+      <div><b>Stays on your device</b><span>Nothing is uploaded. Your image is processed inside this browser tab.</span></div>
+      <div><b>Free, no account</b><span>Open the page and start. There is nothing to sign up for.</span></div>
+      <div><b>Works on your phone</b><span>Big buttons and touch-friendly controls on any screen size.</span></div>
+    </section>
+
+  </div>
+
+  <!-- ===================== TOOLS ===================== -->
+  <section class="card" id="panel-convert" hidden>
     <input type="file" id="file" accept="image/*" multiple hidden>
-    <div class="step"><span class="num">1</span><div><h2>Choose your image</h2><p>JPG, PNG, or WebP. You can pick several at once.</p></div></div>
+    <div class="step"><span class="num">1</span><div><h2>Choose your image</h2><p>Add as many photos as you like. Each one can have its own format.</p></div></div>
     <div class="drop" id="drop" role="button" tabindex="0" aria-label="Choose an image">
       <div class="up"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg></div>
       <div class="t"><strong id="dt">Choose an image</strong><span id="ds">Tap to browse, or drop a file here</span></div>
     </div>
 
+    <ul id="queue" aria-label="Photos to convert" hidden></ul>
+    <button type="button" class="sec addmore" id="addmore" hidden>+ Add another image</button>
+
     <div class="opts">
       <div class="box" id="formats">
-        <div class="step"><span class="num">2</span><div><h2>Convert to</h2><p>Pick the new format</p></div></div>
+        <div class="step"><span class="num">2</span><div><h2>Convert all to</h2><p>Or pick a format for each photo in the list</p></div></div>
         <div class="fmts" role="radiogroup" aria-label="Output format">
           <input type="radio" name="fmt" id="f1" value="image/jpeg"><label for="f1"><i>J</i><span>JPG<small>Photos</small></span></label>
           <input type="radio" name="fmt" id="f2" value="image/png"><label for="f2"><i>P</i><span>PNG<small>Transparent</small></span></label>
           <input type="radio" name="fmt" id="f3" value="image/webp" checked><label for="f3"><i>W</i><span>WebP<small>Web</small></span></label>
+          <input type="radio" name="fmt" id="f4" value="image/bmp"><label for="f4"><i>B</i><span>BMP<small>Windows</small></span></label>
+          <input type="radio" name="fmt" id="f5" value="image/x-icon"><label for="f5"><i>I</i><span>ICO<small>Icon</small></span></label>
         </div>
       </div>
       <div class="box" id="qbox">
@@ -98,7 +168,19 @@
         <button type="button" class="sec" id="rot">Rotate 90°</button>
         <button type="button" class="btn go" id="docrop">Apply crop</button>
       </div>
-      <div class="tctl" id="c-bg" hidden><button type="button" class="btn go" id="dobg">Remove background</button></div>
+      <div class="tctl" id="c-bg" hidden>
+        <button type="button" class="btn go" id="dobg">Remove background</button>
+        <div class="bgchoose" id="bgchoose" hidden>
+          <p class="mt">Background removed. Now choose what goes behind the subject.</p>
+          <div class="bgopt" role="radiogroup" aria-label="New background">
+            <input type="radio" name="bgmode" id="bm1" value="none" checked><label for="bm1">Transparent</label>
+            <input type="radio" name="bgmode" id="bm2" value="color"><label for="bm2">Color</label>
+            <input type="radio" name="bgmode" id="bm3" value="pic"><label for="bm3">Picture</label>
+          </div>
+          <div class="bgrow" id="bgcolorrow" hidden><label>Background color<input type="color" id="bgcolor" value="#ffffff"></label></div>
+          <div class="bgrow" id="bgpicrow" hidden><button type="button" class="sec" id="bgpick">Choose a background picture</button><span class="mt" id="bgpicname"></span><input type="file" id="bgfile" accept="image/*" hidden></div>
+        </div>
+      </div>
       <div class="tctl" id="c-hd" hidden>
         <label>Output size <select id="scale"><option value="1280">HD (1280 px)</option><option value="1920" selected>Full HD (1920 px)</option><option value="2560">2K (2560 px)</option><option value="3840">4K (3840 px)</option></select></label>
         <button type="button" class="btn go" id="dohd">Enhance with AI</button>
@@ -120,15 +202,6 @@
       <button type="button" class="sec" id="rkeep">Keep editing</button>
     </div>
     <p class="mt" id="tmsg" aria-live="polite"></p>
-  </section>
-
-  <section class="how" id="how">
-    <h3>How it works</h3>
-    <div class="steps">
-      <div class="s"><b>1. Pick a tool</b><span>Convert, crop, remove background, enhance, or extend.</span></div>
-      <div class="s"><b>2. Choose an image</b><span>Tap the box and select a photo from your device.</span></div>
-      <div class="s"><b>3. Download</b><span>Save the result or send it to the converter.</span></div>
-    </div>
   </section>
 </main>
 
